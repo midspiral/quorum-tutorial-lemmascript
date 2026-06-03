@@ -1507,22 +1507,32 @@ lemma freeIdListSourceAt(ps: seq<Participant>, s: int, i: int)
   decreases |ps|
   ensures exists j: int :: 0 <= j && j < |ps| && ps[j].id == freeIdList(ps, s)[i] && freeAt(ps[j], s)
 {
+  // Deterministic witness construction: every branch ends by asserting a
+  // *concrete* index satisfying the existential, so Z3 never has to search for
+  // the witness (that search was platform-flaky between Linux and macOS).
   if |ps| > 0 {
+    freeIdList_ensures(ps[1..], s);
     var rest := freeIdList(ps[1..], s);
     if freeAt(ps[0], s) {
-      if i > 0 {
-        freeIdList_ensures(ps[1..], s);
-        assert freeIdList(ps, s) == [ps[0].id] + rest;
+      assert freeIdList(ps, s) == [ps[0].id] + rest;
+      if i == 0 {
+        // Head is free: the witness is index 0.
+        assert 0 <= 0 < |ps| && ps[0].id == freeIdList(ps, s)[i] && freeAt(ps[0], s);
+      } else {
         assert freeIdList(ps, s)[i] == rest[i-1];
         freeIdListSourceAt(ps[1..], s, i - 1);
         var j :| 0 <= j && j < |ps[1..]| && ps[1..][j].id == rest[i-1] && freeAt(ps[1..][j], s);
         assert ps[j+1] == ps[1..][j];
+        // Shift the tail witness j into ps: index j+1.
+        assert 0 <= j+1 < |ps| && ps[j+1].id == freeIdList(ps, s)[i] && freeAt(ps[j+1], s);
       }
     } else {
       assert freeIdList(ps, s) == rest;
       freeIdListSourceAt(ps[1..], s, i);
       var j :| 0 <= j && j < |ps[1..]| && ps[1..][j].id == rest[i] && freeAt(ps[1..][j], s);
       assert ps[j+1] == ps[1..][j];
+      // Head not free: freeIdList(ps,s) == rest, so the witness is again j+1.
+      assert 0 <= j+1 < |ps| && ps[j+1].id == freeIdList(ps, s)[i] && freeAt(ps[j+1], s);
     }
   }
 }
