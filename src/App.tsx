@@ -1,8 +1,8 @@
 import { useState, useCallback } from "react";
 import type { Op, Participant } from "./domain";
 import { freeAt } from "./domain";
-import type { GridConfig } from "./grid";
-import { buildGridConfig, totalSlots } from "./grid";
+import type { GridConfig } from "./gridShell";
+import { buildGridConfig, totalSlots } from "./gridShell";
 import {
   createLocalStore,
   createParticipant,

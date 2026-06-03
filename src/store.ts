@@ -1,7 +1,7 @@
 import type { Event, Op, Participant } from "./domain";
 import { applyOp, initEvent } from "./domain";
-import type { GridConfig } from "./grid";
-import { totalSlots } from "./grid";
+import type { GridConfig } from "./gridShell";
+import { totalSlots } from "./gridShell";
 
 export interface QuorumStore {
   getSnapshot(): Event;

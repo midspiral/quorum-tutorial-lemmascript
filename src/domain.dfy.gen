@@ -886,7 +886,7 @@ lemma decodeParticipants_ensures(sps: seq<SparseParticipant>, n: int)
 function encodeEvent(e: Event): SparseEvent
   requires (e.numSlots >= 0)
 {
-  Event(e.id, e.title, e.numSlots, encodeParticipants(e.participants))
+  SparseEvent(e.id, e.title, e.numSlots, encodeParticipants(e.participants))
 }
 
 function decodeEvent(se: SparseEvent): Event

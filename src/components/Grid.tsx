@@ -1,8 +1,8 @@
 import { Fragment, useRef, useState, useCallback } from "react";
 import type { Participant } from "../domain";
 import { freeAt } from "../domain";
-import type { GridConfig } from "../grid";
-import { slotIndex, timeLabel, colLabel } from "../grid";
+import type { GridConfig } from "../gridShell";
+import { slotIndex, timeLabel, colLabel } from "../gridShell";
 
 interface GridProps {
   gridConfig: GridConfig;
