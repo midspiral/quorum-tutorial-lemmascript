@@ -1502,38 +1502,33 @@ function freeIdListMembership(ps: seq<Participant>, s: int): bool
   true
 }
 
-lemma freeIdListSourceAt(ps: seq<Participant>, s: int, i: int)
+// witness: the original index of the i-th free id
+function srcIdx(ps: seq<Participant>, s: int, i: int): int
   requires 0 <= i < |freeIdList(ps, s)|
   decreases |ps|
-  ensures exists j: int :: 0 <= j && j < |ps| && ps[j].id == freeIdList(ps, s)[i] && freeAt(ps[j], s)
 {
-  // Deterministic witness construction: every branch ends by asserting a
-  // *concrete* index satisfying the existential, so Z3 never has to search for
-  // the witness (that search was platform-flaky between Linux and macOS).
-  if |ps| > 0 {
-    freeIdList_ensures(ps[1..], s);
-    var rest := freeIdList(ps[1..], s);
-    if freeAt(ps[0], s) {
-      assert freeIdList(ps, s) == [ps[0].id] + rest;
-      if i == 0 {
-        // Head is free: the witness is index 0.
-        assert 0 <= 0 < |ps| && ps[0].id == freeIdList(ps, s)[i] && freeAt(ps[0], s);
-      } else {
-        assert freeIdList(ps, s)[i] == rest[i-1];
-        freeIdListSourceAt(ps[1..], s, i - 1);
-        var j :| 0 <= j && j < |ps[1..]| && ps[1..][j].id == rest[i-1] && freeAt(ps[1..][j], s);
-        assert ps[j+1] == ps[1..][j];
-        // Shift the tail witness j into ps: index j+1.
-        assert 0 <= j+1 < |ps| && ps[j+1].id == freeIdList(ps, s)[i] && freeAt(ps[j+1], s);
-      }
-    } else {
-      assert freeIdList(ps, s) == rest;
-      freeIdListSourceAt(ps[1..], s, i);
-      var j :| 0 <= j && j < |ps[1..]| && ps[1..][j].id == rest[i] && freeAt(ps[1..][j], s);
-      assert ps[j+1] == ps[1..][j];
-      // Head not free: freeIdList(ps,s) == rest, so the witness is again j+1.
-      assert 0 <= j+1 < |ps| && ps[j+1].id == freeIdList(ps, s)[i] && freeAt(ps[j+1], s);
+  if freeAt(ps[0], s) then (if i == 0 then 0 else srcIdx(ps[1..], s, i - 1) + 1)
+  else srcIdx(ps[1..], s, i) + 1
+}
+
+lemma srcIdxCorrect(ps: seq<Participant>, s: int, i: int)
+  requires 0 <= i < |freeIdList(ps, s)|
+  decreases |ps|
+  ensures 0 <= srcIdx(ps, s, i) < |ps|
+  ensures ps[srcIdx(ps, s, i)].id == freeIdList(ps, s)[i]
+  ensures freeAt(ps[srcIdx(ps, s, i)], s)
+{
+  freeIdList_ensures(ps[1..], s);
+  if freeAt(ps[0], s) {
+    assert freeIdList(ps, s) == [ps[0].id] + freeIdList(ps[1..], s);
+    if i != 0 {
+      srcIdxCorrect(ps[1..], s, i - 1);
+      assert ps[srcIdx(ps, s, i)] == ps[1..][srcIdx(ps[1..], s, i - 1)];
     }
+  } else {
+    assert freeIdList(ps, s) == freeIdList(ps[1..], s);
+    srcIdxCorrect(ps[1..], s, i);
+    assert ps[srcIdx(ps, s, i)] == ps[1..][srcIdx(ps[1..], s, i)];
   }
 }
 
@@ -1542,9 +1537,12 @@ lemma freeIdListMembership_ensures(ps: seq<Participant>, s: int)
   ensures forall i: int :: ((0 <= i) ==> (i < |freeIdList(ps, s)|) ==> exists j: int :: ((((0 <= j) && (j < |ps|)) && (ps[j].id == freeIdList(ps, s)[i])) && (freeAt(ps[j], s) == true)))
   ensures forall i: int :: ((0 <= i) ==> (i < |ps|) ==> (freeAt(ps[i], s) == true) ==> (ps[i].id in freeIdList(ps, s)))
 {
-  forall i: int | 0 <= i && i < |freeIdList(ps, s)|
-    ensures exists j: int :: 0 <= j && j < |ps| && ps[j].id == freeIdList(ps, s)[i] && freeAt(ps[j], s)
-  { freeIdListSourceAt(ps, s, i); }
+  // postcondition 1: srcIdx(ps,s,i) is a concrete witness, so the exists needs no search
+  forall i: int
+    ensures (0 <= i) ==> (i < |freeIdList(ps, s)|) ==> exists j: int :: ((((0 <= j) && (j < |ps|)) && (ps[j].id == freeIdList(ps, s)[i])) && (freeAt(ps[j], s) == true))
+  {
+    if 0 <= i && i < |freeIdList(ps, s)| { srcIdxCorrect(ps, s, i); }
+  }
   if |ps| > 0 {
     freeIdListMembership_ensures(ps[1..], s);
     var rest := freeIdList(ps[1..], s);
