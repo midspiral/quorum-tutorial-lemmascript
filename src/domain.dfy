@@ -1537,9 +1537,8 @@ lemma freeIdListMembership_ensures(ps: seq<Participant>, s: int)
   ensures forall i: int :: ((0 <= i) ==> (i < |freeIdList(ps, s)|) ==> exists j: int :: ((((0 <= j) && (j < |ps|)) && (ps[j].id == freeIdList(ps, s)[i])) && (freeAt(ps[j], s) == true)))
   ensures forall i: int :: ((0 <= i) ==> (i < |ps|) ==> (freeAt(ps[i], s) == true) ==> (ps[i].id in freeIdList(ps, s)))
 {
-  // postcondition 1: srcIdx(ps,s,i) is a concrete witness, so the exists needs no search
-  forall i: int
-    ensures (0 <= i) ==> (i < |freeIdList(ps, s)|) ==> exists j: int :: ((((0 <= j) && (j < |ps|)) && (ps[j].id == freeIdList(ps, s)[i])) && (freeAt(ps[j], s) == true))
+  forall i: int {:trigger freeIdList(ps, s)[i]}
+    ensures (0 <= i) ==> (i < |freeIdList(ps, s)|) ==> (0 <= srcIdx(ps, s, i) < |ps| && ps[srcIdx(ps, s, i)].id == freeIdList(ps, s)[i] && freeAt(ps[srcIdx(ps, s, i)], s) == true)
   {
     if 0 <= i && i < |freeIdList(ps, s)| { srcIdxCorrect(ps, s, i); }
   }
