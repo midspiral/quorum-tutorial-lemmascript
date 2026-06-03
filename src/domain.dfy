@@ -1496,19 +1496,24 @@ lemma replayPreservesStrict_ensures(e: Event, ops: seq<Op>)
 
 // ── Membership-exact participantsAt ──────────────────────────
 
+function srcIdx(ps: seq<Participant>, s: int, i: int): int
+  requires (0 <= i)
+  requires (i < |freeIdList(ps, s)|)
+  decreases |ps|
+{
+  if freeAt(ps[0], s) then
+    if (i == 0) then
+      0
+    else
+      (srcIdx(ps[1..], s, (i - 1)) + 1)
+  else
+    (srcIdx(ps[1..], s, i) + 1)
+}
+
 function freeIdListMembership(ps: seq<Participant>, s: int): bool
   decreases |ps|
 {
   true
-}
-
-// witness: the original index of the i-th free id
-function srcIdx(ps: seq<Participant>, s: int, i: int): int
-  requires 0 <= i < |freeIdList(ps, s)|
-  decreases |ps|
-{
-  if freeAt(ps[0], s) then (if i == 0 then 0 else srcIdx(ps[1..], s, i - 1) + 1)
-  else srcIdx(ps[1..], s, i) + 1
 }
 
 lemma srcIdxCorrect(ps: seq<Participant>, s: int, i: int)
@@ -1534,7 +1539,7 @@ lemma srcIdxCorrect(ps: seq<Participant>, s: int, i: int)
 
 lemma freeIdListMembership_ensures(ps: seq<Participant>, s: int)
   decreases |ps|
-  ensures forall i: int :: ((0 <= i) ==> (i < |freeIdList(ps, s)|) ==> exists j: int :: ((((0 <= j) && (j < |ps|)) && (ps[j].id == freeIdList(ps, s)[i])) && (freeAt(ps[j], s) == true)))
+  ensures forall i: int :: ((0 <= i) ==> (i < |freeIdList(ps, s)|) ==> ((((0 <= srcIdx(ps, s, i)) && (srcIdx(ps, s, i) < |ps|)) && (ps[srcIdx(ps, s, i)].id == freeIdList(ps, s)[i])) && (freeAt(ps[srcIdx(ps, s, i)], s) == true)))
   ensures forall i: int :: ((0 <= i) ==> (i < |ps|) ==> (freeAt(ps[i], s) == true) ==> (ps[i].id in freeIdList(ps, s)))
 {
   forall i: int {:trigger freeIdList(ps, s)[i]}

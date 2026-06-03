@@ -791,10 +791,20 @@ export function replayPreservesStrict(e: Event, ops: Op[]): boolean {
 
 // ── Membership-exact participantsAt (Family F) ────────────────
 
+// Explicit witness: the original index in `ps` of the i-th free id. Naming the
+// witness (instead of a bare `exists`) keeps the membership postcondition a
+// quantifier-alternation-free `forall`, which the verifier discharges reliably.
+export function srcIdx(ps: Participant[], s: number, i: number): number {
+  //@ verify
+  //@ requires 0 <= i && i < freeIdList(ps, s).length
+  //@ decreases ps.length
+  return freeAt(ps[0], s) ? (i === 0 ? 0 : srcIdx(ps.slice(1), s, i - 1) + 1) : srcIdx(ps.slice(1), s, i) + 1
+}
+
 export function freeIdListMembership(ps: Participant[], s: number): boolean {
   //@ verify
   //@ decreases ps.length
-  //@ ensures forall(i, 0 <= i && i < freeIdList(ps, s).length ==> exists(j, 0 <= j && j < ps.length && ps[j].id === freeIdList(ps, s)[i] && freeAt(ps[j], s) === true))
+  //@ ensures forall(i, 0 <= i && i < freeIdList(ps, s).length ==> 0 <= srcIdx(ps, s, i) && srcIdx(ps, s, i) < ps.length && ps[srcIdx(ps, s, i)].id === freeIdList(ps, s)[i] && freeAt(ps[srcIdx(ps, s, i)], s) === true)
   //@ ensures forall(i, 0 <= i && i < ps.length && freeAt(ps[i], s) === true ==> freeIdList(ps, s).includes(ps[i].id))
   return true
 }
